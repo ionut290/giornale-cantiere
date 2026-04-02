@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giornale Cantiere</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Giornale Cantiere</h1>
+      <p>App commesse + registrazioni giornaliere</p>
+    </header>
+
+    <main class="container">
+      <section id="jobs-view" class="view active">
+        <div class="toolbar">
+          <input id="job-search" type="search" placeholder="Cerca commessa..." />
+          <button id="add-job-btn" class="primary">Aggiungi commessa</button>
+        </div>
+        <div id="jobs-list" class="list"></div>
+      </section>
+
+      <section id="job-detail-view" class="view">
+        <button id="back-to-jobs" class="ghost">← Elenco commesse</button>
+        <div id="job-main-data" class="card"></div>
+
+        <nav id="job-submenu" class="submenu"></nav>
+
+        <section id="panel-panoramica" class="submenu-panel active"></section>
+
+        <section id="panel-giornale" class="submenu-panel">
+          <div class="toolbar">
+            <h2>Giornale cantiere</h2>
+            <button id="add-entry-btn" class="primary">Aggiungi voce al giornale</button>
+          </div>
+          <div id="entries-list" class="list"></div>
+        </section>
+
+        <section id="panel-presenze" class="submenu-panel"></section>
+        <section id="panel-lavori" class="submenu-panel"></section>
+        <section id="panel-mezzi" class="submenu-panel"></section>
+        <section id="panel-materiali" class="submenu-panel"></section>
+        <section id="panel-problemi" class="submenu-panel"></section>
+        <section id="panel-foto" class="submenu-panel"></section>
+        <section id="panel-note" class="submenu-panel"></section>
+      </section>
+    </main>
+
+    <dialog id="job-dialog">
+      <form id="job-form" method="dialog" class="form">
+        <h3>Nuova commessa</h3>
+        <label>Nome commessa<input name="name" required /></label>
+        <label>Codice commessa<input name="code" /></label>
+        <label>Cliente<input name="client" /></label>
+        <label>Responsabile<input name="manager" /></label>
+        <menu>
+          <button value="cancel">Annulla</button>
+          <button class="primary" value="default">Salva</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="entry-dialog">
+      <form id="entry-form" method="dialog" class="form">
+        <h3>Nuova voce giornale</h3>
+
+        <label>Data<input type="date" name="date" required /></label>
+        <label>Nome cantiere / impianto<input name="siteName" required /></label>
+        <label>Comune / località<input name="location" /></label>
+        <label>Responsabile / caposquadra<input name="supervisor" /></label>
+        <label>Operatori presenti<textarea name="operators"></textarea></label>
+        <label>Orario entrata<input type="time" name="entryTime" /></label>
+        <label>Orario uscita<input type="time" name="exitTime" /></label>
+        <label>Assenze<textarea name="absences"></textarea></label>
+        <label>Ditte esterne / subappalti<textarea name="subcontractors"></textarea></label>
+        <label>Condizioni meteo<input name="weather" /></label>
+        <label>Descrizione lavori eseguiti<textarea name="workDescription" required></textarea></label>
+        <label>Zona del cantiere<input name="siteArea" /></label>
+        <label>Stato avanzamento lavori<input name="progressStatus" /></label>
+        <label>Mezzi e attrezzature usate<textarea name="equipment"></textarea></label>
+        <label>Ore utilizzo mezzi<input name="equipmentHours" /></label>
+        <label>Eventuali guasti<textarea name="faults"></textarea></label>
+        <label>Materiali utilizzati<textarea name="materials"></textarea></label>
+        <label>Quantità<input name="quantities" /></label>
+        <label>Consegne ricevute<textarea name="deliveries"></textarea></label>
+        <label>Problemi / anomalie / ritardi / accessi bloccati / sicurezza<textarea name="issues"></textarea></label>
+        <label>Note finali<textarea name="finalNotes"></textarea></label>
+        <label>Firma o conferma operatore<input name="operatorSignature" /></label>
+
+        <label class="photo-label">Foto / Camera
+          <input id="photo-input" type="file" accept="image/*" capture="environment" multiple />
+        </label>
+        <div id="photo-preview" class="photo-grid"></div>
+
+        <menu>
+          <button value="cancel">Annulla</button>
+          <button class="primary" value="default">Salva voce</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
