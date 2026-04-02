@@ -48,21 +48,21 @@
     </main>
 
     <dialog id="job-dialog">
-      <form id="job-form" method="dialog" class="form">
+      <form id="job-form" class="form">
         <h3>Nuova commessa</h3>
         <label>Nome commessa<input name="name" required /></label>
         <label>Codice commessa<input name="code" /></label>
         <label>Cliente<input name="client" /></label>
         <label>Responsabile<input name="manager" /></label>
         <menu>
-          <button value="cancel">Annulla</button>
-          <button class="primary" value="default">Salva</button>
+          <button id="cancel-job-btn" type="button">Annulla</button>
+          <button class="primary" type="submit">Salva</button>
         </menu>
       </form>
     </dialog>
 
     <dialog id="entry-dialog">
-      <form id="entry-form" method="dialog" class="form">
+      <form id="entry-form" class="form">
         <h3>Nuova voce giornale</h3>
 
         <label>Data<input type="date" name="date" required /></label>
@@ -94,8 +94,38 @@
         <div id="photo-preview" class="photo-grid"></div>
 
         <menu>
-          <button value="cancel">Annulla</button>
-          <button class="primary" value="default">Salva voce</button>
+          <button id="cancel-entry-btn" type="button">Annulla</button>
+          <button class="primary" type="submit">Salva voce</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="task-dialog">
+      <form id="task-form" class="form">
+        <h3>Nuova lavorazione da eseguire</h3>
+        <label>Nome lavorazione<input name="title" required /></label>
+        <label>Descrizione<textarea name="description"></textarea></label>
+        <menu>
+          <button id="cancel-task-btn" type="button">Annulla</button>
+          <button class="primary" type="submit">Salva lavorazione</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="task-completion-dialog">
+      <form id="task-completion-form" class="form">
+        <h3>Completa lavorazione</h3>
+        <input type="hidden" name="taskId" />
+        <label>Materiali<textarea name="materials"></textarea></label>
+        <label class="photo-label">Foto / Camera
+          <input id="task-photo-input" type="file" accept="image/*" capture="environment" multiple />
+        </label>
+        <div id="task-photo-preview" class="photo-grid"></div>
+        <label>Problemi / anomalie<textarea name="issues"></textarea></label>
+        <label>Note finali<textarea name="finalNotes"></textarea></label>
+        <menu>
+          <button id="cancel-task-completion-btn" type="button">Annulla</button>
+          <button class="primary" type="submit">Segna come fatto</button>
         </menu>
       </form>
     </dialog>
