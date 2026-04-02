@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giornale Cantiere</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Giornale Cantiere</h1>
+      <p>App commesse + registrazioni giornaliere</p>
+    </header>
+
+    <main class="container">
+      <section id="jobs-view" class="view active">
+        <div class="toolbar">
+          <input id="job-search" type="search" placeholder="Cerca commessa..." />
+          <button id="add-job-btn" class="primary">Aggiungi commessa</button>
+        </div>
+        <div id="jobs-list" class="list"></div>
+      </section>
+
+      <section id="job-detail-view" class="view">
+        <button id="back-to-jobs" class="ghost">← Elenco commesse</button>
+        <div id="job-main-data" class="card"></div>
+        <nav id="job-submenu" class="submenu"></nav>
+
+        <section id="panel-panoramica" class="submenu-panel active"></section>
+
+        <section id="panel-giornale" class="submenu-panel">
+          <div class="toolbar">
+            <h2>Giornale cantiere</h2>
+            <button id="add-entry-btn" class="primary">Aggiungi voce al giornale</button>
+          </div>
+          <div id="entries-list" class="list"></div>
+        </section>
+
+        <section id="panel-presenze" class="submenu-panel"></section>
+        <section id="panel-lavori" class="submenu-panel"></section>
+        <section id="panel-mezzi" class="submenu-panel"></section>
+        <section id="panel-materiali" class="submenu-panel"></section>
+        <section id="panel-problemi" class="submenu-panel"></section>
+        <section id="panel-foto" class="submenu-panel"></section>
+        <section id="panel-note" class="submenu-panel"></section>
+      </section>
+    </main>
+
+    <dialog id="job-dialog">
+      <form id="job-form" class="form">
+        <h3>Nuova commessa</h3>
+        <label>Nome commessa<input name="name" required /></label>
+        <label>Codice commessa<input name="code" /></label>
+        <label>Cliente<input name="client" /></label>
+        <label>Responsabile<input name="manager" /></label>
+        <menu><button id="cancel-job-btn" type="button">Annulla</button><button class="primary" type="submit">Salva</button></menu>
+      </form>
+    </dialog>
+
+    <dialog id="entry-dialog">
+      <form id="entry-form" class="form">
+        <h3>Nuova voce giornale (completa)</h3>
+        <label>Data<input type="date" name="date" required /></label>
+        <label>Nome cantiere / impianto<input name="siteName" required /></label>
+        <label>Operatori presenti<textarea name="operators"></textarea></label>
+        <label>Orario entrata<input type="time" name="entryTime" /></label>
+        <label>Orario uscita<input type="time" name="exitTime" /></label>
+        <label>Condizioni meteo<input name="weather" /></label>
+        <label>Lavori eseguiti<textarea name="workDescription" required></textarea></label>
+        <label>Mezzi usati<textarea name="equipment"></textarea></label>
+        <label>Materiali<textarea name="materials"></textarea></label>
+        <label>Problemi / anomalie<textarea name="issues"></textarea></label>
+        <label>Note finali<textarea name="finalNotes"></textarea></label>
+        <label>Conferma operatore<input name="operatorSignature" /></label>
+        <div class="photo-box">
+          <label>Foto / Camera
+            <input data-photo-input="entry" type="file" accept="image/*" capture="environment" multiple />
+          </label>
+          <small>Puoi selezionare/scattare più foto insieme e aggiungere una nota per ogni foto.</small>
+          <div data-photo-list="entry" class="photo-grid"></div>
+        </div>
+        <menu><button id="cancel-entry-btn" type="button">Annulla</button><button class="primary" type="submit">Salva voce</button></menu>
+      </form>
+    </dialog>
+
+    <dialog id="section-dialog">
+      <form id="section-form" class="form">
+        <h3 id="section-form-title">Nuovo inserimento</h3>
+        <input type="hidden" name="sectionType" />
+        <label>Data<input type="date" name="date" required /></label>
+        <label id="section-field-1-label">Dettaglio 1<textarea id="section-field-1" name="field1"></textarea></label>
+        <label id="section-field-2-label">Dettaglio 2<textarea id="section-field-2" name="field2"></textarea></label>
+        <label id="section-field-3-label">Dettaglio 3<textarea id="section-field-3" name="field3"></textarea></label>
+        <div class="photo-box">
+          <label>Foto / Camera
+            <input data-photo-input="section" type="file" accept="image/*" capture="environment" multiple />
+          </label>
+          <small>Scatta o seleziona più foto in sequenza dal pulsante fotocamera.</small>
+          <div data-photo-list="section" class="photo-grid"></div>
+        </div>
+        <menu><button id="cancel-section-btn" type="button">Annulla</button><button class="primary" type="submit">Salva</button></menu>
+      </form>
+    </dialog>
+
+    <dialog id="task-dialog">
+      <form id="task-form" class="form">
+        <h3>Nuova lavorazione da eseguire</h3>
+        <label>Nome lavorazione<input name="title" required /></label>
+        <label>Descrizione<textarea name="description"></textarea></label>
+        <menu><button id="cancel-task-btn" type="button">Annulla</button><button class="primary" type="submit">Salva lavorazione</button></menu>
+      </form>
+    </dialog>
+
+    <dialog id="task-completion-dialog">
+      <form id="task-completion-form" class="form">
+        <h3>Completa lavorazione</h3>
+        <input type="hidden" name="taskId" />
+        <label>Materiali<textarea name="materials"></textarea></label>
+        <label>Problemi / anomalie<textarea name="issues"></textarea></label>
+        <label>Note finali<textarea name="finalNotes"></textarea></label>
+        <div class="photo-box">
+          <label>Foto / Camera
+            <input data-photo-input="task" type="file" accept="image/*" capture="environment" multiple />
+          </label>
+          <div data-photo-list="task" class="photo-grid"></div>
+        </div>
+        <menu><button id="cancel-task-completion-btn" type="button">Annulla</button><button class="primary" type="submit">Segna come fatto</button></menu>
+      </form>
+    </dialog>
+
+    <dialog id="photo-viewer-dialog" class="photo-viewer">
+      <img id="photo-viewer-img" alt="Foto in evidenza" />
+      <p id="photo-viewer-note"></p>
+      <div class="toolbar">
+        <button id="share-native-btn" class="secondary" type="button">Condividi</button>
+        <a id="share-whatsapp-link" class="button-link" target="_blank" rel="noopener">WhatsApp</a>
+        <a id="share-email-link" class="button-link" target="_blank" rel="noopener">Email</a>
+        <button id="close-photo-viewer-btn" type="button">Chiudi</button>
+      </div>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
