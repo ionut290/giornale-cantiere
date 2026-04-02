@@ -8,11 +8,26 @@ App web mobile-first, separata e dedicata alla gestione:
 ## Funzionalità
 
 - **Elenco commesse** con ricerca rapida e pulsante "Aggiungi commessa"
-- **Dettaglio commessa** con dati principali e storico registrazioni
-- **Nuova voce giornale** completa di tutti i campi richiesti
+- Dopo la creazione, ogni commessa apre automaticamente una pagina dedicata con **submenu interno**
+- **Submenu commessa**:
+  - Panoramica
+  - Giornale cantiere
+  - Presenze
+  - Lavori eseguiti
+  - Mezzi e attrezzature
+  - Materiali
+  - Problemi / anomalie
+  - Foto
+  - Note finali
+- **Giornale cantiere** con inserzioni:
+  - collegate alla commessa corretta
+  - salvate con timestamp completo
+  - ordinate dalla più recente alla più vecchia
+  - **raggruppate automaticamente per data**
+  - espandibili per vedere tutti i dettagli
 - Pulsante **"Foto / Camera"** per scatto diretto o scelta da galleria
 - Salvataggio su **database locale browser (IndexedDB)**
-- Struttura dati già pronta per filtri futuri (data, commessa, operatore)
+- Struttura dati pronta per filtri futuri (data, commessa, operatore)
 
 ## Avvio rapido
 

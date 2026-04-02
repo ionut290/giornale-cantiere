@@ -24,11 +24,26 @@
       <section id="job-detail-view" class="view">
         <button id="back-to-jobs" class="ghost">← Elenco commesse</button>
         <div id="job-main-data" class="card"></div>
-        <div class="toolbar">
-          <h2>Registrazioni</h2>
-          <button id="add-entry-btn" class="primary">Aggiungi voce al giornale</button>
-        </div>
-        <div id="entries-list" class="list"></div>
+
+        <nav id="job-submenu" class="submenu"></nav>
+
+        <section id="panel-panoramica" class="submenu-panel active"></section>
+
+        <section id="panel-giornale" class="submenu-panel">
+          <div class="toolbar">
+            <h2>Giornale cantiere</h2>
+            <button id="add-entry-btn" class="primary">Aggiungi voce al giornale</button>
+          </div>
+          <div id="entries-list" class="list"></div>
+        </section>
+
+        <section id="panel-presenze" class="submenu-panel"></section>
+        <section id="panel-lavori" class="submenu-panel"></section>
+        <section id="panel-mezzi" class="submenu-panel"></section>
+        <section id="panel-materiali" class="submenu-panel"></section>
+        <section id="panel-problemi" class="submenu-panel"></section>
+        <section id="panel-foto" class="submenu-panel"></section>
+        <section id="panel-note" class="submenu-panel"></section>
       </section>
     </main>
 
@@ -63,7 +78,7 @@
         <label>Descrizione lavori eseguiti<textarea name="workDescription" required></textarea></label>
         <label>Zona del cantiere<input name="siteArea" /></label>
         <label>Stato avanzamento lavori<input name="progressStatus" /></label>
-        <label>Mezzi e attrezzature usate<textarea name="equipment" ></textarea></label>
+        <label>Mezzi e attrezzature usate<textarea name="equipment"></textarea></label>
         <label>Ore utilizzo mezzi<input name="equipmentHours" /></label>
         <label>Eventuali guasti<textarea name="faults"></textarea></label>
         <label>Materiali utilizzati<textarea name="materials"></textarea></label>
