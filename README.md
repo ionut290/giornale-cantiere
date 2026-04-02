@@ -4,6 +4,7 @@ App web mobile-first per commesse, registrazioni giornaliere e lavorazioni.
 
 ## Novità principali
 
+- Calendario nella sezione Giornale cantiere: scegli un giorno e visualizzi solo voci/lavorazioni inserite in quella data.
 - Ogni sezione del submenu ha il suo **form dedicato** (non apre sempre il form completo del giornale).
 - Upload foto con pulsante **Foto / Camera** in modalità multipla (`multiple`): puoi aggiungere più foto in una sessione.
 - Per ogni foto puoi inserire una **nota specifica**.

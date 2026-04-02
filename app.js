@@ -6,6 +6,7 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("it-IT", { dateStyle: "short" });
 
 const photoState = { entry: [], section: [], task: [] };
 let activeViewerPhoto = null;
+let journalDateFilter = "";
 
 const SECTION_CONFIG = {
   presenze: { title: "Nuove presenze", labels: ["Operatori presenti", "Orario entrata", "Orario uscita"] },
@@ -184,9 +185,12 @@ function openSectionDialog(sectionType) {
   form.sectionType.value = sectionType;
   form.date.value = new Date().toISOString().slice(0, 10);
   document.getElementById("section-form-title").textContent = cfg.title;
-  document.getElementById("section-field-1-label").childNodes[0].nodeValue = `${cfg.labels[0]}`;
-  document.getElementById("section-field-2-label").childNodes[0].nodeValue = `${cfg.labels[1]}`;
-  document.getElementById("section-field-3-label").childNodes[0].nodeValue = `${cfg.labels[2]}`;
+
+  const fieldsContainer = document.getElementById("section-fields");
+  fieldsContainer.innerHTML = cfg.labels
+    .map((label, idx) => `<label>${escapeHtml(label)}<textarea name="field${idx + 1}"></textarea></label>`)
+    .join("");
+
   resetPhotoState("section");
   dialogs.section.showModal();
 }
@@ -228,27 +232,28 @@ async function openJobDetail(jobId) {
 
   jobMainData.innerHTML = `<h2>${escapeHtml(job.name)}</h2><p class="meta">Codice: ${escapeHtml(job.code || "-")}</p><p class="meta">Cliente: ${escapeHtml(job.client || "-")}</p><p class="meta">Responsabile: ${escapeHtml(job.manager || "-")}</p>`;
 
-  const entries = await renderEntries(jobId);
+  const entries = await renderEntries(jobId, journalDateFilter);
   await renderTasksPanel();
   renderSubPanels(entries);
   showSubmenuSection("panoramica");
   showView("detail");
 }
 
-async function renderEntries(jobId) {
+async function renderEntries(jobId, filterDate = "") {
   const entries = (await getAll("entries")).filter((e) => e.jobId === jobId).sort((a, b) => (getGroupDateKey(a) < getGroupDateKey(b) ? 1 : -1));
-  const grouped = entries.reduce((acc, e) => ((acc[getGroupDateKey(e)] ??= []).push(e), acc), {});
+  const filteredEntries = filterDate ? entries.filter((e) => getGroupDateKey(e) === filterDate) : entries;
+  const grouped = filteredEntries.reduce((acc, e) => ((acc[getGroupDateKey(e)] ??= []).push(e), acc), {});
 
   entriesList.innerHTML = Object.keys(grouped)
     .sort((a, b) => (a < b ? 1 : -1))
     .map(
       (dateKey) => `<article class="date-group card"><h3>${formatDateLabel(dateKey)}</h3><div class="list">${grouped[dateKey]
         .map(
-          (e) => `<details class="entry-item"><summary><strong>${escapeHtml(e.sectionType || "giornale")}</strong><span class="meta">${escapeHtml(e.siteName || "Voce")}</span></summary><div class="entry-details"><p>${escapeHtml(e.workDescription || e.field1 || "-")}</p><p class="meta">Foto: ${(e.photos || []).length}</p></div></details>`
+          (e) => `<details class="entry-item"><summary><strong>${escapeHtml(e.sectionType || "giornale")}</strong><span class="meta">${escapeHtml(e.siteName || "Voce")}</span></summary><div class="entry-details"><p><strong>Dettaglio:</strong> ${escapeHtml(e.workDescription || e.field1 || "-")}</p><p><strong>Nota:</strong> ${escapeHtml(e.finalNotes || e.field3 || "-")}</p><p class="meta">Foto: ${(e.photos || []).length}</p>${renderPhotoThumbs(e.photos || [])}</div></details>`
         )
         .join("")}</div></article>`
     )
-    .join("") || `<div class="card">Nessuna registrazione inserita.</div>`;
+    .join("") || `<div class="card">${filterDate ? "Nessuna voce per il giorno selezionato." : "Nessuna registrazione inserita."}</div>`;
 
   return entries;
 }
@@ -304,7 +309,7 @@ async function openTaskCompletion(checkbox) {
 }
 
 async function saveAndRefresh() {
-  const entries = await renderEntries(selectedJobId);
+  const entries = selectedJobId ? await renderEntries(selectedJobId, journalDateFilter) : [];
   renderSubPanels(entries);
   await renderTasksPanel();
 }
@@ -437,6 +442,17 @@ document.querySelectorAll("[data-photo-input]").forEach((input) => {
 
 document.getElementById("share-native-btn").addEventListener("click", shareActivePhotoNative);
 document.getElementById("close-photo-viewer-btn").addEventListener("click", () => dialogs.photoViewer.close());
+
+document.getElementById("journal-date-filter")?.addEventListener("change", async (e) => {
+  journalDateFilter = e.target.value || "";
+  if (selectedJobId) await renderEntries(selectedJobId, journalDateFilter);
+});
+
+document.getElementById("clear-journal-date")?.addEventListener("click", async () => {
+  journalDateFilter = "";
+  document.getElementById("journal-date-filter").value = "";
+  if (selectedJobId) await renderEntries(selectedJobId, journalDateFilter);
+});
 
 document.getElementById("back-to-jobs").addEventListener("click", () => showView("jobs"));
 jobSearch.addEventListener("input", () => renderJobs(jobSearch.value));

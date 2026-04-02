@@ -33,6 +33,10 @@
             <h2>Giornale cantiere</h2>
             <button id="add-entry-btn" class="primary">Aggiungi voce al giornale</button>
           </div>
+          <div class="toolbar">
+            <label>Calendario <input id="journal-date-filter" type="date" /></label>
+            <button id="clear-journal-date" type="button">Mostra tutto</button>
+          </div>
           <div id="entries-list" class="list"></div>
         </section>
 
@@ -88,9 +92,7 @@
         <h3 id="section-form-title">Nuovo inserimento</h3>
         <input type="hidden" name="sectionType" />
         <label>Data<input type="date" name="date" required /></label>
-        <label id="section-field-1-label">Dettaglio 1<textarea id="section-field-1" name="field1"></textarea></label>
-        <label id="section-field-2-label">Dettaglio 2<textarea id="section-field-2" name="field2"></textarea></label>
-        <label id="section-field-3-label">Dettaglio 3<textarea id="section-field-3" name="field3"></textarea></label>
+        <div id="section-fields" class="form"></div>
         <div class="photo-box">
           <label>Foto / Camera
             <input data-photo-input="section" type="file" accept="image/*" capture="environment" multiple />
