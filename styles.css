@@ -1,0 +1,37 @@
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --primary: #0b5fff;
+  --border: #e5e7eb;
+}
+* { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+.app-header { padding: 1rem; background: #0f172a; color: #fff; }
+.app-header h1 { margin: 0 0 .2rem; font-size: 1.2rem; }
+.app-header p { margin: 0; font-size: .9rem; opacity: .85; }
+.container { padding: .8rem; max-width: 720px; margin: 0 auto; }
+.view { display: none; }
+.view.active { display: block; }
+.toolbar { display: flex; gap: .5rem; align-items: center; justify-content: space-between; margin-bottom: .8rem; }
+input, textarea, button { font-size: 1rem; }
+input, textarea { width: 100%; padding: .65rem; border: 1px solid var(--border); border-radius: .5rem; background: #fff; }
+textarea { min-height: 80px; }
+button { border: none; border-radius: .55rem; padding: .65rem .8rem; cursor: pointer; }
+button.primary { background: var(--primary); color: #fff; }
+button.ghost { background: transparent; color: var(--primary); padding: 0; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: .75rem; padding: .8rem; margin-bottom: .8rem; }
+.list { display: grid; gap: .6rem; }
+.job-item, .entry-item { background: var(--card); border: 1px solid var(--border); border-radius: .75rem; padding: .75rem; }
+.job-item h3, .entry-item h3 { margin: 0 0 .3rem; font-size: 1rem; }
+.meta { color: var(--muted); font-size: .86rem; }
+dialog { width: min(95vw, 760px); border: none; border-radius: .85rem; padding: 0; }
+.form { padding: 1rem; display: grid; gap: .6rem; }
+.form menu { display: flex; justify-content: end; gap: .5rem; margin: .4rem 0 0; padding: 0; }
+.photo-label { border: 1px dashed var(--border); border-radius: .5rem; padding: .6rem; background: #f8fafc; }
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+.photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: .45rem; border: 1px solid var(--border); }
+@media (max-width: 480px) {
+  .toolbar { flex-direction: column; align-items: stretch; }
+}
