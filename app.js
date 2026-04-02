@@ -1,10 +1,21 @@
 const DB_NAME = "giornale-cantiere-db";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 let db;
 let selectedJobId = null;
-let pendingPhotos = [];
-let pendingTaskPhotos = [];
 const DATE_FORMATTER = new Intl.DateTimeFormat("it-IT", { dateStyle: "short" });
+
+const photoState = { entry: [], section: [], task: [] };
+let activeViewerPhoto = null;
+
+const SECTION_CONFIG = {
+  presenze: { title: "Nuove presenze", labels: ["Operatori presenti", "Orario entrata", "Orario uscita"] },
+  lavori: { title: "Nuovi lavori eseguiti", labels: ["Lavori eseguiti", "Zona cantiere", "Stato avanzamento"] },
+  mezzi: { title: "Nuovi mezzi e attrezzature", labels: ["Mezzi usati", "Ore utilizzo mezzi", "Guasti"] },
+  materiali: { title: "Nuovi materiali", labels: ["Materiali", "Quantità", "Consegne"] },
+  problemi: { title: "Nuovi problemi / anomalie", labels: ["Problemi / anomalie", "Sicurezza", "Note"] },
+  note: { title: "Nuove note finali", labels: ["Note finali", "Conferma operatore", "Extra"] },
+  foto: { title: "Nuova registrazione foto", labels: ["Descrizione foto", "Posizione", "Dettaglio"] }
+};
 
 const views = {
   jobs: document.getElementById("jobs-view"),
@@ -14,13 +25,13 @@ const views = {
 const SUBMENU_SECTIONS = [
   { key: "panoramica", label: "Panoramica", panelId: "panel-panoramica" },
   { key: "giornale", label: "Giornale cantiere", panelId: "panel-giornale" },
-  { key: "presenze", label: "Presenze", panelId: "panel-presenze", quickField: "operators" },
-  { key: "lavori", label: "Lavori eseguiti", panelId: "panel-lavori", quickField: "workDescription" },
-  { key: "mezzi", label: "Mezzi e attrezzature", panelId: "panel-mezzi", quickField: "equipment" },
-  { key: "materiali", label: "Materiali", panelId: "panel-materiali", quickField: "materials" },
-  { key: "problemi", label: "Problemi / anomalie", panelId: "panel-problemi", quickField: "issues" },
+  { key: "presenze", label: "Presenze", panelId: "panel-presenze" },
+  { key: "lavori", label: "Lavori eseguiti", panelId: "panel-lavori" },
+  { key: "mezzi", label: "Mezzi e attrezzature", panelId: "panel-mezzi" },
+  { key: "materiali", label: "Materiali", panelId: "panel-materiali" },
+  { key: "problemi", label: "Problemi / anomalie", panelId: "panel-problemi" },
   { key: "foto", label: "Foto", panelId: "panel-foto" },
-  { key: "note", label: "Note finali", panelId: "panel-note", quickField: "finalNotes" }
+  { key: "note", label: "Note finali", panelId: "panel-note" }
 ];
 
 const jobsList = document.getElementById("jobs-list");
@@ -28,14 +39,15 @@ const entriesList = document.getElementById("entries-list");
 const jobMainData = document.getElementById("job-main-data");
 const jobSearch = document.getElementById("job-search");
 const jobSubmenu = document.getElementById("job-submenu");
-const entryForm = document.getElementById("entry-form");
 const panels = Object.fromEntries(SUBMENU_SECTIONS.map((s) => [s.key, document.getElementById(s.panelId)]));
 
 const dialogs = {
   job: document.getElementById("job-dialog"),
   entry: document.getElementById("entry-dialog"),
+  section: document.getElementById("section-dialog"),
   task: document.getElementById("task-dialog"),
-  taskCompletion: document.getElementById("task-completion-dialog")
+  taskCompletion: document.getElementById("task-completion-dialog"),
+  photoViewer: document.getElementById("photo-viewer-dialog")
 };
 
 function openDB() {
@@ -52,6 +64,7 @@ function openDB() {
         entries.createIndex("jobId", "jobId");
         entries.createIndex("date", "date");
         entries.createIndex("createdAt", "createdAt");
+        entries.createIndex("sectionType", "sectionType");
       }
       if (!d.objectStoreNames.contains("tasks")) {
         const tasks = d.createObjectStore("tasks", { keyPath: "id", autoIncrement: true });
@@ -64,8 +77,16 @@ function openDB() {
   });
 }
 
-function tx(store, mode = "readonly") {
-  return db.transaction(store, mode).objectStore(store);
+const tx = (store, mode = "readonly") => db.transaction(store, mode).objectStore(store);
+const add = (store, data) => promisifyRequest(tx(store, "readwrite").add(data));
+const put = (store, data) => promisifyRequest(tx(store, "readwrite").put(data));
+const getAll = (store) => promisifyRequest(tx(store).getAll());
+
+function promisifyRequest(req) {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
 function showView(name) {
@@ -75,36 +96,8 @@ function showView(name) {
 
 function showSubmenuSection(sectionKey) {
   SUBMENU_SECTIONS.forEach((section) => {
-    const button = document.querySelector(`[data-section="${section.key}"]`);
-    const panel = panels[section.key];
-    const isActive = section.key === sectionKey;
-
-    if (button) button.classList.toggle("active", isActive);
-    if (panel) panel.classList.toggle("active", isActive);
-  });
-}
-
-function add(store, data) {
-  return new Promise((resolve, reject) => {
-    const req = tx(store, "readwrite").add(data);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function put(store, data) {
-  return new Promise((resolve, reject) => {
-    const req = tx(store, "readwrite").put(data);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function getAll(store) {
-  return new Promise((resolve, reject) => {
-    const req = tx(store).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    document.querySelector(`[data-section="${section.key}"]`)?.classList.toggle("active", section.key === sectionKey);
+    panels[section.key]?.classList.toggle("active", section.key === sectionKey);
   });
 }
 
@@ -117,215 +110,203 @@ function escapeHtml(value = "") {
     .replaceAll("'", "&#39;");
 }
 
-function formatDateLabel(dateStr) {
+const formatDateLabel = (dateStr) => {
   if (!dateStr) return "Data non specificata";
   const date = new Date(`${dateStr}T00:00:00`);
   return Number.isNaN(date.getTime()) ? dateStr : DATE_FORMATTER.format(date);
-}
+};
 
-function getGroupDateKey(entry) {
-  if (entry.date) return entry.date;
-  if (entry.createdAt) return entry.createdAt.slice(0, 10);
-  return "0000-00-00";
-}
+const getGroupDateKey = (entry) => entry.date || entry.createdAt?.slice(0, 10) || "0000-00-00";
 
-function resetEntryDialog() {
-  pendingPhotos = [];
-  document.getElementById("photo-preview").innerHTML = "";
-  document.getElementById("photo-input").value = "";
-  entryForm.reset();
-}
-
-function openEntryDialog(focusField) {
-  if (!selectedJobId) return;
-  resetEntryDialog();
-  entryForm.date.value = new Date().toISOString().slice(0, 10);
-  dialogs.entry.showModal();
-  if (focusField && entryForm[focusField]) {
-    setTimeout(() => entryForm[focusField].focus(), 50);
-  }
+function buildSubmenu() {
+  jobSubmenu.innerHTML = SUBMENU_SECTIONS.map((s) => `<button class="submenu-btn" data-section="${s.key}">${s.label}</button>`).join("");
+  SUBMENU_SECTIONS.forEach((s) => document.querySelector(`[data-section="${s.key}"]`)?.addEventListener("click", () => showSubmenuSection(s.key)));
 }
 
 async function renderJobs(filter = "") {
   const jobs = await getAll("jobs");
-  const normalized = filter.trim().toLowerCase();
-  const filtered = normalized
-    ? jobs.filter((j) => `${j.name} ${j.code || ""} ${j.client || ""}`.toLowerCase().includes(normalized))
-    : jobs;
+  const query = filter.trim().toLowerCase();
+  const filtered = query ? jobs.filter((j) => `${j.name} ${j.code || ""} ${j.client || ""}`.toLowerCase().includes(query)) : jobs;
 
   jobsList.innerHTML = filtered.length
     ? filtered
-        .map(
-          (j) => `
-      <article class="job-item" data-id="${j.id}">
-        <h3>${escapeHtml(j.name)}</h3>
-        <p class="meta">${escapeHtml(j.code || "Nessun codice")} • ${escapeHtml(j.client || "Cliente non indicato")}</p>
-      </article>
-    `
-        )
+        .map((j) => `<article class="job-item" data-id="${j.id}"><h3>${escapeHtml(j.name)}</h3><p class="meta">${escapeHtml(j.code || "Nessun codice")} • ${escapeHtml(j.client || "Cliente non indicato")}</p></article>`)
         .join("")
     : `<div class="card">Nessuna commessa presente.</div>`;
 
-  [...jobsList.querySelectorAll(".job-item")].forEach((item) => {
-    item.addEventListener("click", () => openJobDetail(Number(item.dataset.id)));
-  });
+  jobsList.querySelectorAll(".job-item").forEach((el) => el.addEventListener("click", () => openJobDetail(Number(el.dataset.id))));
 }
 
-function buildSubmenu() {
-  jobSubmenu.innerHTML = SUBMENU_SECTIONS.map((section) => `<button class="submenu-btn" data-section="${section.key}">${section.label}</button>`).join("");
-  SUBMENU_SECTIONS.forEach((section) => {
-    const button = document.querySelector(`[data-section="${section.key}"]`);
-    button?.addEventListener("click", () => showSubmenuSection(section.key));
-  });
-}
-
-async function renderTasksPanel() {
-  const tasks = (await getAll("tasks"))
-    .filter((task) => task.jobId === selectedJobId)
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-
-  const todo = tasks.filter((t) => t.status !== "done");
-  const done = tasks.filter((t) => t.status === "done");
-
-  panels.lavori.innerHTML = `
-    <article class="card">
-      <div class="toolbar">
-        <h3>Elenco lavori da eseguire</h3>
-        <button id="add-task-btn" class="primary">Nuova lavorazione</button>
+function renderPhotoList(stateKey) {
+  const container = document.querySelector(`[data-photo-list="${stateKey}"]`);
+  container.innerHTML = photoState[stateKey]
+    .map(
+      (photo, idx) => `
+      <div class="photo-item">
+        <img src="${photo.dataUrl}" alt="${escapeHtml(photo.name)}" data-open-photo="${stateKey}:${idx}" />
+        <textarea data-photo-note="${stateKey}:${idx}" placeholder="Nota foto...">${escapeHtml(photo.note || "")}</textarea>
       </div>
-      ${todo.length ? todo.map((task) => `<label class="task-item"><input type="checkbox" data-complete-task-id="${task.id}" /> ${escapeHtml(task.title)}</label>`).join("") : `<p class="meta">Nessuna lavorazione pianificata.</p>`}
-    </article>
-    <article class="card">
-      <h3>Lavori eseguiti</h3>
-      ${done.length ? done.map((task) => `<details class="entry-item"><summary><strong>${escapeHtml(task.title)}</strong><span class="meta">${formatDateLabel(task.completedAt?.slice(0, 10))}</span></summary><div class="entry-details"><p><strong>Materiali:</strong> ${escapeHtml(task.completion?.materials || "-")}</p><p><strong>Problemi:</strong> ${escapeHtml(task.completion?.issues || "-")}</p><p><strong>Note finali:</strong> ${escapeHtml(task.completion?.finalNotes || "-")}</p>${(task.completion?.photos || []).length ? `<div class="photo-grid">${task.completion.photos.map((photo) => `<img src="${photo.dataUrl}" alt="${escapeHtml(photo.name || "foto lavorazione")}" />`).join("")}</div>` : `<p class="meta">Nessuna foto allegata.</p>`}</div></details>`).join("") : `<p class="meta">Nessuna lavorazione eseguita.</p>`}
-    </article>
-  `;
+    `
+    )
+    .join("");
 
-  document.getElementById("add-task-btn")?.addEventListener("click", () => dialogs.task.showModal());
-  document.querySelectorAll("[data-complete-task-id]").forEach((el) => {
-    el.addEventListener("change", () => {
-      if (el.checked) {
-        const form = document.getElementById("task-completion-form");
-        form.taskId.value = el.dataset.completeTaskId;
-        pendingTaskPhotos = [];
-        document.getElementById("task-photo-preview").innerHTML = "";
-        document.getElementById("task-photo-input").value = "";
-        dialogs.taskCompletion.showModal();
-      }
+  container.querySelectorAll("[data-photo-note]").forEach((ta) => {
+    ta.addEventListener("input", () => {
+      const [key, idx] = ta.dataset.photoNote.split(":");
+      photoState[key][Number(idx)].note = ta.value;
+    });
+  });
+  container.querySelectorAll("[data-open-photo]").forEach((img) => {
+    img.addEventListener("click", () => {
+      const [key, idx] = img.dataset.openPhoto.split(":");
+      openPhotoViewer(photoState[key][Number(idx)]);
     });
   });
 }
 
-function renderSubPanels(entries) {
-  const quickButton = (label, field) => `<button class="secondary" data-open-entry-field="${field}">Aggiungi dato: ${label}</button>`;
-  const totalPhotos = entries.reduce((acc, e) => acc + (e.photos || []).length, 0);
+async function handlePhotoInputChange(stateKey, files) {
+  for (const file of files) {
+    photoState[stateKey].push({ name: file.name || `foto-${Date.now()}.jpg`, note: "", dataUrl: await fileToDataUrl(file) });
+  }
+  renderPhotoList(stateKey);
+}
 
-  panels.panoramica.innerHTML = `
-    <article class="card">
-      <h3>Panoramica commessa</h3>
-      <p class="meta">Registrazioni totali: ${entries.length}</p>
-      <p class="meta">Foto totali: ${totalPhotos}</p>
-      ${quickButton("Panoramica", "workDescription")}
-    </article>
-  `;
+function resetPhotoState(stateKey) {
+  photoState[stateKey] = [];
+  renderPhotoList(stateKey);
+  document.querySelector(`[data-photo-input="${stateKey}"]`).value = "";
+}
 
-  panels.presenze.innerHTML = `<article class="card"><h3>Presenze</h3><p class="meta">Sezione dedicata alle presenze operatori.</p>${quickButton("Presenze", "operators")}</article>`;
-  panels.mezzi.innerHTML = `<article class="card"><h3>Mezzi e attrezzature</h3><p class="meta">Riepilogo mezzi usati e ore utilizzo.</p>${quickButton("Mezzi", "equipment")}</article>`;
-  panels.materiali.innerHTML = `<article class="card"><h3>Materiali</h3><p class="meta">Riepilogo materiali e quantità.</p>${quickButton("Materiali", "materials")}</article>`;
-  panels.problemi.innerHTML = `<article class="card"><h3>Problemi / anomalie</h3><p class="meta">Riepilogo criticità e sicurezza.</p>${quickButton("Problemi", "issues")}</article>`;
+function openSectionDialog(sectionType) {
+  const cfg = SECTION_CONFIG[sectionType];
+  const form = document.getElementById("section-form");
+  form.reset();
+  form.sectionType.value = sectionType;
+  form.date.value = new Date().toISOString().slice(0, 10);
+  document.getElementById("section-form-title").textContent = cfg.title;
+  document.getElementById("section-field-1-label").childNodes[0].nodeValue = `${cfg.labels[0]}`;
+  document.getElementById("section-field-2-label").childNodes[0].nodeValue = `${cfg.labels[1]}`;
+  document.getElementById("section-field-3-label").childNodes[0].nodeValue = `${cfg.labels[2]}`;
+  resetPhotoState("section");
+  dialogs.section.showModal();
+}
 
-  panels.foto.innerHTML = entries.some((entry) => (entry.photos || []).length)
-    ? `<article class="card"><h3>Foto</h3><div class="photo-grid">${entries
-        .flatMap((entry) => (entry.photos || []).map((photo) => `<img src="${photo.dataUrl}" alt="${escapeHtml(photo.name || "foto cantiere")}" />`))
-        .join("")}</div></article>`
-    : `<article class="card"><h3>Foto</h3><p class="meta">Nessuna foto presente.</p><button class="secondary" data-open-entry-field="workDescription">Aggiungi nuova voce con foto</button></article>`;
+function openPhotoViewer(photo) {
+  activeViewerPhoto = photo;
+  document.getElementById("photo-viewer-img").src = photo.dataUrl;
+  document.getElementById("photo-viewer-note").textContent = photo.note ? `Nota: ${photo.note}` : "Nessuna nota per questa foto.";
 
-  const latestNotes = entries
-    .filter((entry) => entry.finalNotes)
-    .slice(0, 5)
-    .map((entry) => `<li><strong>${formatDateLabel(entry.date)}</strong>: ${escapeHtml(entry.finalNotes)}</li>`)
-    .join("");
+  const shareText = encodeURIComponent(`Foto cantiere${photo.note ? ` - Nota: ${photo.note}` : ""}`);
+  document.getElementById("share-whatsapp-link").href = `https://wa.me/?text=${shareText}`;
+  document.getElementById("share-email-link").href = `mailto:?subject=Foto%20cantiere&body=${shareText}`;
+  dialogs.photoViewer.showModal();
+}
 
-  panels.note.innerHTML = `<article class="card"><h3>Note finali</h3>${latestNotes ? `<ul>${latestNotes}</ul>` : `<p class="meta">Nessuna nota finale registrata.</p>`}${quickButton("Note finali", "finalNotes")}</article>`;
+async function shareActivePhotoNative() {
+  if (!activeViewerPhoto || !navigator.share) return;
+  try {
+    const file = dataUrlToFile(activeViewerPhoto.dataUrl, activeViewerPhoto.name || "foto-cantiere.jpg");
+    await navigator.share({ files: [file], title: "Foto cantiere", text: activeViewerPhoto.note || "Foto cantiere" });
+  } catch (_) {
+    // user dismissed
+  }
+}
 
-  document.querySelectorAll("[data-open-entry-field]").forEach((btn) => {
-    btn.addEventListener("click", () => openEntryDialog(btn.dataset.openEntryField));
-  });
+function dataUrlToFile(dataUrl, fileName) {
+  const [meta, data] = dataUrl.split(",");
+  const mime = meta.match(/:(.*?);/)[1];
+  const bytes = atob(data);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i += 1) arr[i] = bytes.charCodeAt(i);
+  return new File([arr], fileName, { type: mime });
 }
 
 async function openJobDetail(jobId) {
   selectedJobId = jobId;
-  const jobs = await getAll("jobs");
-  const job = jobs.find((j) => j.id === jobId);
+  const job = (await getAll("jobs")).find((j) => j.id === jobId);
   if (!job) return;
 
-  jobMainData.innerHTML = `
-    <h2>${escapeHtml(job.name)}</h2>
-    <p class="meta">Codice: ${escapeHtml(job.code || "-")}</p>
-    <p class="meta">Cliente: ${escapeHtml(job.client || "-")}</p>
-    <p class="meta">Responsabile: ${escapeHtml(job.manager || "-")}</p>
-  `;
+  jobMainData.innerHTML = `<h2>${escapeHtml(job.name)}</h2><p class="meta">Codice: ${escapeHtml(job.code || "-")}</p><p class="meta">Cliente: ${escapeHtml(job.client || "-")}</p><p class="meta">Responsabile: ${escapeHtml(job.manager || "-")}</p>`;
 
   const entries = await renderEntries(jobId);
-  renderSubPanels(entries);
   await renderTasksPanel();
+  renderSubPanels(entries);
   showSubmenuSection("panoramica");
   showView("detail");
 }
 
 async function renderEntries(jobId) {
-  const allEntries = await getAll("entries");
-  const entries = allEntries
-    .filter((e) => e.jobId === jobId)
-    .sort((a, b) => (getGroupDateKey(a) < getGroupDateKey(b) ? 1 : -1));
+  const entries = (await getAll("entries")).filter((e) => e.jobId === jobId).sort((a, b) => (getGroupDateKey(a) < getGroupDateKey(b) ? 1 : -1));
+  const grouped = entries.reduce((acc, e) => ((acc[getGroupDateKey(e)] ??= []).push(e), acc), {});
 
-  const grouped = entries.reduce((acc, entry) => {
-    const dateKey = getGroupDateKey(entry);
-    if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push(entry);
-    return acc;
-  }, {});
-
-  const orderedDates = Object.keys(grouped).sort((a, b) => (a < b ? 1 : -1));
-
-  entriesList.innerHTML = orderedDates.length
-    ? orderedDates
-        .map((dateKey) => {
-          const itemsHtml = grouped[dateKey]
-            .map(
-              (entry) => `
-              <details class="entry-item">
-                <summary>
-                  <strong>${escapeHtml(entry.siteName || "Cantiere")}</strong>
-                  <span class="meta">${escapeHtml(entry.entryTime || "--:--")} - ${escapeHtml(entry.exitTime || "--:--")}</span>
-                </summary>
-                <div class="entry-details">
-                  <p><strong>Operatori:</strong> ${escapeHtml(entry.operators || "-")}</p>
-                  <p><strong>Meteo:</strong> ${escapeHtml(entry.weather || "-")}</p>
-                  <p><strong>Lavori eseguiti:</strong> ${escapeHtml(entry.workDescription || "-")}</p>
-                  <p><strong>Mezzi usati:</strong> ${escapeHtml(entry.equipment || "-")}</p>
-                  <p><strong>Materiali:</strong> ${escapeHtml(entry.materials || "-")}</p>
-                  <p><strong>Problemi / anomalie:</strong> ${escapeHtml(entry.issues || "-")}</p>
-                  <p><strong>Note finali:</strong> ${escapeHtml(entry.finalNotes || "-")}</p>
-                  <p><strong>Conferma operatore:</strong> ${escapeHtml(entry.operatorSignature || "-")}</p>
-                  ${(entry.photos || []).length ? `<div class="photo-grid">${entry.photos.map((photo) => `<img src="${photo.dataUrl}" alt="${escapeHtml(photo.name || "foto cantiere")}" />`).join("")}</div>` : `<p class="meta">Nessuna foto allegata.</p>`}
-                </div>
-              </details>
-            `
-            )
-            .join("");
-
-          return `
-            <article class="date-group card">
-              <h3>${formatDateLabel(dateKey)}</h3>
-              <div class="list">${itemsHtml}</div>
-            </article>
-          `;
-        })
-        .join("")
-    : `<div class="card">Nessuna registrazione inserita.</div>`;
+  entriesList.innerHTML = Object.keys(grouped)
+    .sort((a, b) => (a < b ? 1 : -1))
+    .map(
+      (dateKey) => `<article class="date-group card"><h3>${formatDateLabel(dateKey)}</h3><div class="list">${grouped[dateKey]
+        .map(
+          (e) => `<details class="entry-item"><summary><strong>${escapeHtml(e.sectionType || "giornale")}</strong><span class="meta">${escapeHtml(e.siteName || "Voce")}</span></summary><div class="entry-details"><p>${escapeHtml(e.workDescription || e.field1 || "-")}</p><p class="meta">Foto: ${(e.photos || []).length}</p></div></details>`
+        )
+        .join("")}</div></article>`
+    )
+    .join("") || `<div class="card">Nessuna registrazione inserita.</div>`;
 
   return entries;
+}
+
+async function renderTasksPanel() {
+  const tasks = (await getAll("tasks")).filter((t) => t.jobId === selectedJobId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const todo = tasks.filter((t) => t.status !== "done");
+  const done = tasks.filter((t) => t.status === "done");
+
+  panels.lavori.innerHTML = `<article class="card"><div class="toolbar"><h3>Elenco lavori da eseguire</h3><button id="add-task-btn" class="primary">Nuova lavorazione</button></div>${todo.length ? todo.map((t) => `<label class="task-item"><input type="checkbox" data-complete-task-id="${t.id}" /> ${escapeHtml(t.title)}</label>`).join("") : `<p class="meta">Nessuna lavorazione pianificata.</p>`}</article><article class="card"><h3>Lavori eseguiti</h3>${done.length ? done.map((t) => `<details class="entry-item"><summary><strong>${escapeHtml(t.title)}</strong><span class="meta">${formatDateLabel(t.completedAt?.slice(0, 10))}</span></summary><div class="entry-details"><p><strong>Materiali:</strong> ${escapeHtml(t.completion?.materials || "-")}</p><p><strong>Problemi:</strong> ${escapeHtml(t.completion?.issues || "-")}</p><p><strong>Note:</strong> ${escapeHtml(t.completion?.finalNotes || "-")}</p>${renderPhotoThumbs(t.completion?.photos || [])}</div></details>`).join("") : `<p class="meta">Nessuna lavorazione eseguita.</p>`}</article>`;
+
+  document.getElementById("add-task-btn")?.addEventListener("click", () => dialogs.task.showModal());
+  document.querySelectorAll("[data-complete-task-id]").forEach((el) => el.addEventListener("change", () => openTaskCompletion(el)));
+}
+
+function renderSubPanels(entries) {
+  const counts = countSections(entries);
+  panels.panoramica.innerHTML = `<article class="card"><h3>Panoramica</h3><p class="meta">Registrazioni totali: ${entries.length}</p></article>`;
+  panels.presenze.innerHTML = `<article class="card"><h3>Presenze</h3><p class="meta">Voci: ${counts.presenze}</p><button class="secondary" data-open-section="presenze">Compila presenze</button></article>`;
+  panels.mezzi.innerHTML = `<article class="card"><h3>Mezzi e attrezzature</h3><p class="meta">Voci: ${counts.mezzi}</p><button class="secondary" data-open-section="mezzi">Compila mezzi</button></article>`;
+  panels.materiali.innerHTML = `<article class="card"><h3>Materiali</h3><p class="meta">Voci: ${counts.materiali}</p><button class="secondary" data-open-section="materiali">Compila materiali</button></article>`;
+  panels.problemi.innerHTML = `<article class="card"><h3>Problemi / anomalie</h3><p class="meta">Voci: ${counts.problemi}</p><button class="secondary" data-open-section="problemi">Compila problemi</button></article>`;
+  panels.note.innerHTML = `<article class="card"><h3>Note finali</h3><p class="meta">Voci: ${counts.note}</p><button class="secondary" data-open-section="note">Compila note finali</button></article>`;
+  panels.foto.innerHTML = `<article class="card"><h3>Foto</h3><p class="meta">Foto totali: ${entries.reduce((acc, e) => acc + (e.photos || []).length, 0)}</p><button class="secondary" data-open-section="foto">Aggiungi foto</button><div class="photo-grid">${entries.flatMap((e) => (e.photos || []).map((p) => `<img src="${p.dataUrl}" alt="${escapeHtml(p.name)}" data-photo-lookup="${encodeURIComponent(JSON.stringify(p))}" />`)).join("")}</div></article>`;
+
+  document.querySelectorAll("[data-open-section]").forEach((btn) => btn.addEventListener("click", () => openSectionDialog(btn.dataset.openSection)));
+  document.querySelectorAll("[data-photo-lookup]").forEach((img) => img.addEventListener("click", () => openPhotoViewer(JSON.parse(decodeURIComponent(img.dataset.photoLookup)))));
+}
+
+function countSections(entries) {
+  return entries.reduce(
+    (acc, e) => {
+      if (acc[e.sectionType] !== undefined) acc[e.sectionType] += 1;
+      return acc;
+    },
+    { presenze: 0, mezzi: 0, materiali: 0, problemi: 0, note: 0, foto: 0 }
+  );
+}
+
+function renderPhotoThumbs(photos) {
+  if (!photos.length) return `<p class="meta">Nessuna foto allegata.</p>`;
+  return `<div class="photo-grid">${photos.map((p) => `<img src="${p.dataUrl}" alt="${escapeHtml(p.name)}" data-photo-lookup="${encodeURIComponent(JSON.stringify(p))}" />`).join("")}</div>`;
+}
+
+async function openTaskCompletion(checkbox) {
+  if (!checkbox.checked) return;
+  const form = document.getElementById("task-completion-form");
+  form.taskId.value = checkbox.dataset.completeTaskId;
+  form.reset();
+  form.taskId.value = checkbox.dataset.completeTaskId;
+  resetPhotoState("task");
+  dialogs.taskCompletion.showModal();
+}
+
+async function saveAndRefresh() {
+  const entries = await renderEntries(selectedJobId);
+  renderSubPanels(entries);
+  await renderTasksPanel();
 }
 
 document.getElementById("add-job-btn").addEventListener("click", () => dialogs.job.showModal());
@@ -333,18 +314,11 @@ document.getElementById("add-job-btn").addEventListener("click", () => dialogs.j
 document.getElementById("job-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  const newId = await add("jobs", {
-    name: fd.get("name"),
-    code: fd.get("code"),
-    client: fd.get("client"),
-    manager: fd.get("manager"),
-    createdAt: new Date().toISOString()
-  });
-
+  const id = await add("jobs", { name: fd.get("name"), code: fd.get("code"), client: fd.get("client"), manager: fd.get("manager"), createdAt: new Date().toISOString() });
   dialogs.job.close();
   e.target.reset();
   await renderJobs(jobSearch.value);
-  await openJobDetail(newId);
+  await openJobDetail(id);
 });
 
 document.getElementById("cancel-job-btn").addEventListener("click", () => {
@@ -352,40 +326,78 @@ document.getElementById("cancel-job-btn").addEventListener("click", () => {
   dialogs.job.close();
 });
 
-document.getElementById("add-entry-btn").addEventListener("click", () => openEntryDialog());
+document.getElementById("add-entry-btn").addEventListener("click", () => {
+  document.getElementById("entry-form").reset();
+  document.getElementById("entry-form").date.value = new Date().toISOString().slice(0, 10);
+  resetPhotoState("entry");
+  dialogs.entry.showModal();
+});
 
 document.getElementById("entry-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  const payload = Object.fromEntries(fd.entries());
-  payload.jobId = selectedJobId;
-  payload.photos = pendingPhotos;
-  payload.createdAt = new Date().toISOString();
-
-  await add("entries", payload);
+  await add("entries", {
+    jobId: selectedJobId,
+    sectionType: "giornale",
+    date: fd.get("date"),
+    siteName: fd.get("siteName"),
+    operators: fd.get("operators"),
+    entryTime: fd.get("entryTime"),
+    exitTime: fd.get("exitTime"),
+    weather: fd.get("weather"),
+    workDescription: fd.get("workDescription"),
+    equipment: fd.get("equipment"),
+    materials: fd.get("materials"),
+    issues: fd.get("issues"),
+    finalNotes: fd.get("finalNotes"),
+    operatorSignature: fd.get("operatorSignature"),
+    photos: photoState.entry,
+    createdAt: new Date().toISOString()
+  });
   dialogs.entry.close();
-
-  const entries = await renderEntries(selectedJobId);
-  renderSubPanels(entries);
+  resetPhotoState("entry");
+  await saveAndRefresh();
   showSubmenuSection("giornale");
-  resetEntryDialog();
 });
 
 document.getElementById("cancel-entry-btn").addEventListener("click", () => {
-  resetEntryDialog();
+  document.getElementById("entry-form").reset();
+  resetPhotoState("entry");
   dialogs.entry.close();
+});
+
+document.getElementById("section-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  await add("entries", {
+    jobId: selectedJobId,
+    sectionType: fd.get("sectionType"),
+    date: fd.get("date"),
+    field1: fd.get("field1"),
+    field2: fd.get("field2"),
+    field3: fd.get("field3"),
+    workDescription: fd.get("field1"),
+    finalNotes: fd.get("field3"),
+    photos: photoState.section,
+    createdAt: new Date().toISOString()
+  });
+  dialogs.section.close();
+  document.getElementById("section-form").reset();
+  resetPhotoState("section");
+  await saveAndRefresh();
+  showSubmenuSection(fd.get("sectionType"));
+});
+
+document.getElementById("cancel-section-btn").addEventListener("click", () => {
+  document.getElementById("section-form").reset();
+  resetPhotoState("section");
+  dialogs.section.close();
 });
 
 document.getElementById("task-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  await add("tasks", {
-    jobId: selectedJobId,
-    title: fd.get("title"),
-    description: fd.get("description"),
-    status: "todo",
-    createdAt: new Date().toISOString()
-  });
+  await add("tasks", { jobId: selectedJobId, title: fd.get("title"), description: fd.get("description"), status: "todo", createdAt: new Date().toISOString() });
   e.target.reset();
   dialogs.task.close();
   await renderTasksPanel();
@@ -401,52 +413,33 @@ document.getElementById("task-completion-form").addEventListener("submit", async
   e.preventDefault();
   const fd = new FormData(e.target);
   const taskId = Number(fd.get("taskId"));
-  const tasks = await getAll("tasks");
-  const task = tasks.find((t) => t.id === taskId && t.jobId === selectedJobId);
+  const task = (await getAll("tasks")).find((t) => t.id === taskId && t.jobId === selectedJobId);
   if (!task) return;
-
   task.status = "done";
   task.completedAt = new Date().toISOString();
-  task.completion = {
-    materials: fd.get("materials"),
-    issues: fd.get("issues"),
-    finalNotes: fd.get("finalNotes"),
-    photos: pendingTaskPhotos
-  };
-
+  task.completion = { materials: fd.get("materials"), issues: fd.get("issues"), finalNotes: fd.get("finalNotes"), photos: photoState.task };
   await put("tasks", task);
-  pendingTaskPhotos = [];
-  document.getElementById("task-completion-form").reset();
   dialogs.taskCompletion.close();
+  document.getElementById("task-completion-form").reset();
+  resetPhotoState("task");
   await renderTasksPanel();
-  showSubmenuSection("lavori");
 });
 
 document.getElementById("cancel-task-completion-btn").addEventListener("click", () => {
-  pendingTaskPhotos = [];
-  document.getElementById("task-photo-preview").innerHTML = "";
-  document.getElementById("task-photo-input").value = "";
   document.getElementById("task-completion-form").reset();
+  resetPhotoState("task");
   dialogs.taskCompletion.close();
 });
 
-document.getElementById("photo-input").addEventListener("change", async (e) => {
-  const files = [...e.target.files];
-  for (const file of files) {
-    const dataUrl = await fileToDataUrl(file);
-    pendingPhotos.push({ name: file.name, dataUrl });
-  }
-  document.getElementById("photo-preview").innerHTML = pendingPhotos.map((p) => `<img src="${p.dataUrl}" alt="${escapeHtml(p.name)}" />`).join("");
+document.querySelectorAll("[data-photo-input]").forEach((input) => {
+  input.addEventListener("change", (e) => handlePhotoInputChange(input.dataset.photoInput, [...e.target.files]));
 });
 
-document.getElementById("task-photo-input").addEventListener("change", async (e) => {
-  const files = [...e.target.files];
-  for (const file of files) {
-    const dataUrl = await fileToDataUrl(file);
-    pendingTaskPhotos.push({ name: file.name, dataUrl });
-  }
-  document.getElementById("task-photo-preview").innerHTML = pendingTaskPhotos.map((p) => `<img src="${p.dataUrl}" alt="${escapeHtml(p.name)}" />`).join("");
-});
+document.getElementById("share-native-btn").addEventListener("click", shareActivePhotoNative);
+document.getElementById("close-photo-viewer-btn").addEventListener("click", () => dialogs.photoViewer.close());
+
+document.getElementById("back-to-jobs").addEventListener("click", () => showView("jobs"));
+jobSearch.addEventListener("input", () => renderJobs(jobSearch.value));
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -456,9 +449,6 @@ function fileToDataUrl(file) {
     reader.readAsDataURL(file);
   });
 }
-
-document.getElementById("back-to-jobs").addEventListener("click", () => showView("jobs"));
-jobSearch.addEventListener("input", () => renderJobs(jobSearch.value));
 
 (async function init() {
   db = await openDB();

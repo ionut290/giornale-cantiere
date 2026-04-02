@@ -14,13 +14,13 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .container { padding: .8rem; max-width: 720px; margin: 0 auto; }
 .view { display: none; }
 .view.active { display: block; }
-.toolbar { display: flex; gap: .5rem; align-items: center; justify-content: space-between; margin-bottom: .8rem; }
+.toolbar { display: flex; gap: .5rem; align-items: center; justify-content: space-between; margin-bottom: .8rem; flex-wrap: wrap; }
 input, textarea, button { font-size: 1rem; }
 input, textarea { width: 100%; padding: .65rem; border: 1px solid var(--border); border-radius: .5rem; background: #fff; }
-textarea { min-height: 80px; }
-button { border: none; border-radius: .55rem; padding: .65rem .8rem; cursor: pointer; }
+textarea { min-height: 72px; }
+button, .button-link { border: none; border-radius: .55rem; padding: .65rem .8rem; cursor: pointer; text-decoration: none; display: inline-block; }
 button.primary { background: var(--primary); color: #fff; }
-button.secondary { background: #eaf1ff; color: #0037a8; }
+button.secondary, .button-link { background: #eaf1ff; color: #0037a8; }
 button.ghost { background: transparent; color: var(--primary); padding: 0; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: .75rem; padding: .8rem; margin-bottom: .8rem; }
 .list { display: grid; gap: .6rem; }
@@ -28,34 +28,14 @@ button.ghost { background: transparent; color: var(--primary); padding: 0; }
 .job-item h3, .entry-item h3 { margin: 0 0 .3rem; font-size: 1rem; }
 .meta { color: var(--muted); font-size: .86rem; }
 
-.submenu {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: .45rem;
-  margin-bottom: .8rem;
-}
-.submenu-btn {
-  background: #fff;
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: .55rem;
-  padding: .55rem .5rem;
-}
-.submenu-btn.active {
-  background: #eaf1ff;
-  border-color: #bdd3ff;
-  color: #0037a8;
-}
+.submenu { display: grid; grid-template-columns: repeat(2, 1fr); gap: .45rem; margin-bottom: .8rem; }
+.submenu-btn { background: #fff; border: 1px solid var(--border); color: var(--text); border-radius: .55rem; padding: .55rem .5rem; }
+.submenu-btn.active { background: #eaf1ff; border-color: #bdd3ff; color: #0037a8; }
 .submenu-panel { display: none; }
 .submenu-panel.active { display: block; }
 
 .date-group h3 { margin: 0 0 .6rem; }
-.entry-item summary {
-  display: flex;
-  flex-direction: column;
-  gap: .2rem;
-  cursor: pointer;
-}
+.entry-item summary { display: flex; flex-direction: column; gap: .2rem; cursor: pointer; }
 .entry-item summary::-webkit-details-marker { display: none; }
 .entry-details { margin-top: .6rem; display: grid; gap: .4rem; }
 .entry-details p { margin: 0; }
@@ -65,9 +45,16 @@ button.ghost { background: transparent; color: var(--primary); padding: 0; }
 dialog { width: min(95vw, 760px); border: none; border-radius: .85rem; padding: 0; }
 .form { padding: 1rem; display: grid; gap: .6rem; }
 .form menu { display: flex; justify-content: end; gap: .5rem; margin: .4rem 0 0; padding: 0; }
-.photo-label { border: 1px dashed var(--border); border-radius: .5rem; padding: .6rem; background: #f8fafc; }
+.photo-box { border: 1px dashed var(--border); border-radius: .5rem; padding: .6rem; background: #f8fafc; }
 .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
-.photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: .45rem; border: 1px solid var(--border); }
+.photo-item { display: grid; gap: .3rem; }
+.photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: .45rem; border: 1px solid var(--border); cursor: pointer; }
+.photo-item textarea { min-height: 58px; }
+
+.photo-viewer { width: min(96vw, 800px); background: #111827; color: #fff; }
+.photo-viewer img { width: 100%; max-height: 65vh; object-fit: contain; display: block; }
+.photo-viewer p { padding: .75rem 1rem 0; margin: 0; }
+.photo-viewer .toolbar { padding: .75rem 1rem 1rem; }
 
 @media (max-width: 480px) {
   .toolbar { flex-direction: column; align-items: stretch; }

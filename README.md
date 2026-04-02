@@ -1,25 +1,22 @@
 # Giornale Cantiere Mobile
 
-App web mobile-first, separata e dedicata alla gestione:
-- commesse
-- registrazioni giornaliere di cantiere
-- allegati foto da fotocamera o galleria
+App web mobile-first per commesse, registrazioni giornaliere e lavorazioni.
 
-## Funzionalità
+## Novità principali
 
-- **Elenco commesse** con ricerca rapida e pulsante "Aggiungi commessa"
-- Ogni commessa apre una pagina dedicata con **submenu interno**
-- **Giornale cantiere**: inserzioni collegate alla commessa, salvate con timestamp, ordinate e raggruppate per data
-- **Annulla reale** nei form (nessun salvataggio involontario)
-- Pulsanti rapidi nelle sezioni submenu (Panoramica/Presenze/Mezzi/Materiali/Problemi/Note) per aprire direttamente la compilazione voce
-- Nuova sezione **Elenco lavori da eseguire**:
-  - creazione lavorazione
-  - checkbox "fatto"
-  - apertura form completamento con materiali, foto, problemi/anomalie, note finali
-  - lavorazione completata mostrata automaticamente in **Lavori eseguiti**
-- Pulsante **"Foto / Camera"** per scatto diretto o scelta da galleria
-- Salvataggio su **database locale browser (IndexedDB)**
+- Ogni sezione del submenu ha il suo **form dedicato** (non apre sempre il form completo del giornale).
+- Upload foto con pulsante **Foto / Camera** in modalità multipla (`multiple`): puoi aggiungere più foto in una sessione.
+- Per ogni foto puoi inserire una **nota specifica**.
+- Tap su una foto => apertura **schermo intero** con opzioni condivisione:
+  - pulsante Condividi (API nativa del telefono, se disponibile)
+  - link WhatsApp
+  - link Email
+- Sezione lavori con:
+  - elenco lavori da eseguire
+  - check “fatto”
+  - form completamento con materiali/foto/problemi/note
+  - spostamento automatico in lavori eseguiti
 
 ## Avvio rapido
 
-Apri `index.html` in un browser moderno (su telefono o in emulazione mobile).
+Apri `index.html` su browser mobile moderno.
